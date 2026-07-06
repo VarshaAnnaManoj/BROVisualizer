@@ -342,6 +342,116 @@ describe('comparison mode', () => {
   })
 })
 
+describe('json viewer mode', () => {
+  beforeEach(() => {
+    window.sessionStorage.setItem('brov.auth', 'true')
+    window.history.replaceState(null, '', '/')
+  })
+
+  it('opens JSON viewer mode from the top navigation', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/ontology/389?version=v1')) {
+        return response(200, { id: 389, output_json: { one: 1 } })
+      }
+      if (url.includes('/api/ontology/390?version=v1')) {
+        return response(200, { id: 390, output_json: { one: 2 } })
+      }
+      return response(404, { detail: 'not found' })
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Pre' })).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Json Viewer' }))
+
+    expect(screen.getByRole('heading', { name: 'JSON Viewer & Formatter' })).toBeInTheDocument()
+    expect(screen.getByLabelText('JSON input')).toBeInTheDocument()
+    expect(screen.getByLabelText('JSON tree output')).toBeInTheDocument()
+    expect(window.location.pathname).toBe('/json-viewer')
+  })
+
+  it('shows parse validation and supports pretty/minify/clear actions', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/ontology/389?version=v1')) {
+        return response(200, { id: 389, output_json: { one: 1 } })
+      }
+      if (url.includes('/api/ontology/390?version=v1')) {
+        return response(200, { id: 390, output_json: { one: 2 } })
+      }
+      return response(404, { detail: 'not found' })
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Json Viewer' })).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Json Viewer' }))
+
+    const input = screen.getByLabelText('JSON input')
+
+    fireEvent.change(input, { target: { value: '{invalid json' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Parse JSON' }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Invalid JSON')
+
+    fireEvent.change(input, { target: { value: '{"a":1,"b":[2,3]}' } })
+    await userEvent.click(screen.getByRole('button', { name: 'Pretty Format' }))
+
+    expect(String((input as HTMLTextAreaElement).value)).toContain('"a": 1')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Minify JSON' }))
+    expect(input).toHaveValue('{"a":1,"b":[2,3]}')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear JSON' }))
+    expect(input).toHaveValue('')
+    expect(screen.getByText('No JSON parsed yet.')).toBeInTheDocument()
+  })
+
+  it('supports tree toggle, search highlight, and selected path context', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/api/ontology/389?version=v1')) {
+        return response(200, { id: 389, output_json: { one: 1 } })
+      }
+      if (url.includes('/api/ontology/390?version=v1')) {
+        return response(200, { id: 390, output_json: { one: 2 } })
+      }
+      return response(404, { detail: 'not found' })
+    })
+
+    vi.stubGlobal('fetch', fetchMock)
+    render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Json Viewer' })).toBeInTheDocument()
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Json Viewer' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Expand All' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Select node $.company.metadata.owner' }))
+
+    expect(screen.getByText('Selected path: $.company.metadata.owner')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('Search JSON'), 'owner')
+
+    expect(screen.getByText('owner')).toBeInTheDocument()
+    expect(document.querySelectorAll('mark').length).toBeGreaterThan(0)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Collapse All' }))
+    expect(screen.getByRole('button', { name: 'Toggle node $' })).toBeInTheDocument()
+  })
+})
+
 describe('login gate', () => {
   it('shows login page and redirects unauthenticated users to /login', async () => {
     window.history.replaceState(null, '', '/comparison')

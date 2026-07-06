@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import './App.css'
+import JsonViewer from './components/JsonViewer'
 
 type OntologyApiRecord = {
   id: number
@@ -110,6 +111,7 @@ const METADATA_FALLBACK_VALUE = 'Not available'
 const IMAGE_FALLBACK_VALUE = 'Image unavailable'
 const OCR_FALLBACK_VALUE = 'OCR text not available'
 const LOGIN_PATH = '/login'
+const JSON_VIEWER_PATH = '/json-viewer'
 const APP_PATH = '/'
 const AUTH_SESSION_KEY = 'brov.auth'
 const LOGIN_ENDPOINT = '/api/auth/login'
@@ -768,7 +770,15 @@ function createInitialPaneStates(): Record<PaneKey, PaneState> {
 }
 
 function normalizeRoutePath(pathname: string): string {
-  return pathname === LOGIN_PATH ? LOGIN_PATH : APP_PATH
+  if (pathname === LOGIN_PATH) {
+    return LOGIN_PATH
+  }
+
+  if (pathname === JSON_VIEWER_PATH) {
+    return JSON_VIEWER_PATH
+  }
+
+  return APP_PATH
 }
 
 function App() {
@@ -1061,6 +1071,10 @@ function App() {
       return
     }
 
+    if (routePath === JSON_VIEWER_PATH) {
+      return
+    }
+
     const controller = new AbortController()
     for (const pane of PANE_KEYS) {
       const state = paneStates[pane]
@@ -1269,12 +1283,32 @@ function App() {
                 Forward
               </button>
               <button type="submit" className="chip chip-strong">Apply</button>
+              <button
+                type="button"
+                className={`chip ${routePath === JSON_VIEWER_PATH ? 'chip-strong' : ''}`}
+                onClick={() => navigateToPath(JSON_VIEWER_PATH)}
+              >
+                Json Viewer
+              </button>
+              <button
+                type="button"
+                className={`chip ${routePath === APP_PATH ? 'chip-strong' : ''}`}
+                onClick={() => navigateToPath(APP_PATH)}
+              >
+                BROViewer
+              </button>
               <button type="button" className="chip chip-logout" onClick={handleLogout}>Logout</button>
             </form>
             {bannerNavigationError ? <span className="banner-nav-error">{bannerNavigationError}</span> : null}
           </div>
         </header>
 
+        {routePath === JSON_VIEWER_PATH ? (
+          <section className="surface-line json-viewer-shell" aria-label="JSON viewer shell">
+            <JsonViewer />
+          </section>
+        ) : (
+        <>
         <section className="analysis-grid" aria-label="Ontology and summary panels">
           <section className="comparison-grid" aria-label="Pre and Post ontology comparison">
             {PANE_KEYS.map((pane) => {
@@ -1491,6 +1525,8 @@ function App() {
             </ul>
           </div>
         </section>
+        </>
+        )}
       </section>
     </main>
   )
