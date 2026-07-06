@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactElement } from 'react'
 
 type JsonPrimitive = string | number | boolean | null
 type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue }
@@ -219,14 +219,14 @@ function JsonViewer({ className }: Props) {
     if (!parsedJson) {
       return {
         truncated: false,
-        content: null as JSX.Element | null,
+        content: null as ReactElement | null,
       }
     }
 
     let renderedNodeCount = 0
     let truncated = false
 
-    function renderNode(value: JsonValue, path: string, keyLabel?: string): JSX.Element | null {
+    function renderNode(value: JsonValue, path: string, keyLabel?: string): ReactElement | null {
       if (normalizedSearch && !nodeMatchesSearch(value, normalizedSearch, keyLabel)) {
         return null
       }
@@ -301,7 +301,7 @@ function JsonViewer({ className }: Props) {
             <ul className="json-children">
               {children
                 .map((child) => renderNode(child.node, child.path, child.label))
-                .filter((entry): entry is JSX.Element => entry !== null)}
+                .filter((entry): entry is ReactElement => entry !== null)}
             </ul>
           ) : null}
         </li>
