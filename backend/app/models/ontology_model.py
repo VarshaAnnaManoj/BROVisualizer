@@ -19,6 +19,7 @@ class OntologyEvolution(Base):
     location: Mapped[str | None] = mapped_column(Text, nullable=True)
     ocr_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     change_description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    change_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     change_type: Mapped[str | None] = mapped_column(Text, nullable=True)
     hierarchy_assessment: Mapped[str | None] = mapped_column(Text, nullable=True)
     validation_notes: Mapped[str | None] = mapped_column(Text, nullable=True)

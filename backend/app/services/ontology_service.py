@@ -25,6 +25,7 @@ class OntologyService:
         output_json = parse_json_object(ontology.output_ontology_result)
         location_value = _as_text(getattr(ontology, "location", None))
         ocr_text_value = _as_text(getattr(ontology, "ocr_text", None))
+        change_reason_value = _as_text(getattr(ontology, "change_reason", None))
 
         return OntologyRecordResponse(
             id=ontology.id,
@@ -35,7 +36,7 @@ class OntologyService:
             output_json=output_json,
             change_type=_as_text(ontology.change_type),
             change_description=_as_text(ontology.change_description),
-            change_reason=_as_text(getattr(ontology, "change_reason", None)),
+            change_reason=change_reason_value,
             validation_notes=_as_text(getattr(ontology, "validation_notes", None)),
             hierarchy_assessment=_as_text(getattr(ontology, "hierarchy_assessment", None)),
             ambiguities=_as_text(getattr(ontology, "ambiguities", None)),

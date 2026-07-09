@@ -172,6 +172,7 @@ def test_ontology_model_columns_match_view_projection() -> None:
         "location",
         "ocr_text",
         "change_description",
+        "change_reason",
         "change_type",
         "hierarchy_assessment",
         "validation_notes",
@@ -231,3 +232,57 @@ def test_ontology_response_maps_location_to_image_url_and_returns_ocr_text(
     assert body["location"] == "https://cdn.example.com/img-389.png"
     assert body["image_url"] == "https://cdn.example.com/img-389.png"
     assert body["ocr_text"] == "Detected text from OCR."
+
+
+def test_ontology_response_sources_change_reason_from_change_reason_column(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ontology = _make_ontology(
+        {
+            "Education": {
+                "Tutoring": {
+                    "change_reason": "JSON value should be ignored",
+                }
+            }
+        }
+    )
+    ontology.change_description = "Value from change_description column"
+    ontology.change_reason = "Value from change_reason column"
+
+    monkeypatch.setattr(
+        ontology_routes.repository,
+        "get_ontology_by_id",
+        lambda _db, ontology_id: ontology if ontology_id == 389 else None,
+    )
+
+    response = client.get("/api/ontology/389")
+
+    assert response.status_code == 200
+    assert response.json()["change_reason"] == "Value from change_reason column"
+
+
+def test_ontology_response_prefers_change_reason_over_change_description_when_both_exist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    ontology = _make_ontology(
+        {
+            "Education": {
+                "Tutoring": {
+                    "change_reason": "JSON fallback value should not win",
+                }
+            }
+        }
+    )
+    ontology.change_description = "Value from change_description"
+    ontology.change_reason = "Canonical value from change_reason"
+
+    monkeypatch.setattr(
+        ontology_routes.repository,
+        "get_ontology_by_id",
+        lambda _db, ontology_id: ontology if ontology_id == 389 else None,
+    )
+
+    response = client.get("/api/ontology/389")
+
+    assert response.status_code == 200
+    assert response.json()["change_reason"] == "Canonical value from change_reason"
